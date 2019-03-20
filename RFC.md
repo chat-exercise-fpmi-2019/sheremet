@@ -2,11 +2,11 @@
 #### Underlying protocol
 - TCP
 #### Usage of existing protocols
-- HTTP-based
+- No usage, simple protocol
 #### Message delimiting for simple protocols
 - Fixed size messages
 #### Valid username options
 - Numbers
-- Letters
+- Words (Strings without spaces)
 #### Command replies
 - Error codes (200 OK, 400 Failed, etc.)
