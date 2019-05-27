@@ -49,7 +49,7 @@ The MS message is being sent by clients and MUST be of form:
 * followed by the recipient username represented by a string of upper or lower case letters and numbers, with length of exactly 30 characters. If the username is not that long, it is followed by underscores to reach that exact length.
 * followed by the message body with the length of exactly 32 characters. If the message is not that long, it is followed by the underscores.
 
-Example, as a C string literal: "UNusernameofolduser_____________Hey! How's it going?____________"
+Example, as a C string literal: "MSusernameofolduser_____________Hey! How's it going?____________"
 
 Servers SHOULD forward the message to the specified recipient using the SM command.
 
