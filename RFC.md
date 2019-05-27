@@ -6,7 +6,7 @@ The chat consists of server and client. Client can issue three types of commands
 
 * Set username
 * Send message
-  Send broadcast message
+* Send broadcast message
 
 Server can send three types of responses to client.
 
