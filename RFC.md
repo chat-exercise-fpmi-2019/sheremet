@@ -2,18 +2,17 @@
 
 This document describes network protocol for "client-server chat" educational exercise.
 
-The chat consist of server and client. Client can issue three types of commands:
+The chat consists of server and client. Client can issue three types of commands:
 
 * Set username
-* Input password to authorize
 * Send message
+  Send broadcast message
 
 Server can send three types of responses to client.
 
 * Incoming message
-* Password request
 * Failure reply for a client command
-* Custom notification
+* Info message
 
 ## Connection
 
@@ -21,103 +20,74 @@ Clients establish a TCP (see RFC 793) connection with a server and communicate w
 
 All text MUST be encoded as UTF-8 (RFC 3629) for network transmission.
 
-Clients MAY NOT send messages until they are authorized.
+Clients MAY NOT send messages until they set their usernames.
 
 Clients and servers MAY do anything, including dropping the connection, after recieving a message badly formed according to this RFC.
 
+Messages are fixed-size.
+
 ## Messages send from client to server
 
-### USERNAME
+### UN
 
-The USERNAME message is being sent by clients and MUST be of form:
+The UN message is being sent by clients to set their usernames and MUST be of form:
 
-* string `USERNAME` in upper case,
-* followed by exactly one normal space character (ASCII "SP"),
-* followed by the username represented by a string of upper or lower case letters, numbers or underscores,
-* followed by exactly one normal newline character (ASCII "LF").
+* string `UN` in upper case,
+* followed by the username represented by a string of upper or lower case letters and numbers, with length of exactly 30 characters. If the username is not that long, it is followed by underscores to reach that exact length.
 
-Username length MUST be between 1 and 64 characters.
-
-Example, as a C string literal: "USERNAME user1234\n"
+Example, as a C string literal: "UNusernameofnewuser_____________"
 
 Servers SHOULD use the usernames provided by clients this way when retransmitting their messages to other clients.
 
-Server SHOULD request user's password by PASSWORDREQUEST message, for example "PASSWORDREQUEST user1234\n", or, if user name is incorrect, send client failure response
+If a user with the specified username already exists, servers MUST accept the message as well-formed and SHOULD reply to the sender with an appropriate IN message, while ignoring the new username.
 
-### PASSWORD
+### MS
 
-The PASSWORD message is being sent by clients and MUST be of form:
+The MS message is being sent by clients and MUST be of form:
 
-* string `PASSWORD` in upper case,
-* followed by exactly one normal space character (ASCII "SP"),
-* followed by the password represented by a string of upper or lower case letters, numbers or underscores,
-* followed by exactly one normal newline character (ASCII "LF").
+* string `MS` in upper case;
+* followed by the recipient username represented by a string of upper or lower case letters and numbers, with length of exactly 30 characters. If the username is not that long, it is followed by underscores to reach that exact length.
+* followed by the message body with the length of exactly 32 characters. If the message is not that long, it is followed by the underscores.
 
-Password length MUST be between 8 and 16 characters.
+Example, as a C string literal: "UNusernameofolduser_____________Hey! How's it going?____________"
 
-Example, as a C string literal: "PASSWORD 12345678\n"
+Servers SHOULD forward the message to the specified recipient using the SM command.
 
-If the password is correct, server should react with corresponding INFO message, for example "INFO Welcome, user1234\n". Else server should send failure response
+Servers MUST accept empty messages(with body full of underscores) as well-formed.
+Servers MUST accept messages to recipients that cannot be found as well-formed and in this case SHOULD reply to the sender with an appropriate IN message.
 
-### SEND
+### BC
 
-The SEND message is being sent by clients and MUST be of form:
+The BC message is being sent by clients and MUST be of form:
 
-* string `SEND` in upper case;
-* followed by exactly one normal space character;
-* followed by the recipient username represented by a string of upper or lower case letters, numbers or underscores;
-* followed by exactly one normal space character;
-* followed by the message body length (LENGTH) in bytes, a nonnegative integer represented as a string of decimal digits without leading zeros;
-* followed by exactly one normal newline character;
-* followed by the message body represented as an exactly LENGTH bytes long sequence of arbitrary symbols;
-* followed by exactly one normal newline character.
+* string `BC` in upper case;
+* followed by the message body with the length of exactly 30 characters. If the message is not that long, it is followed by the underscores.
 
-Example, as a C string literal: "SEND user123 17\nhi!\nhow are you?\n\n"
+Example, as a C string literal: "BCHey! How's it going?__________"
 
-Servers SHOULD forward the message to the specified recipient using the `MESSAGE` command.
+Servers SHOULD forward the message to all other users using the SM command.
 
-Servers MUST accept zero-body-length messages as well-formed.
-Servers MUST accept messages to recipients that cannot be found as well-formed and in this case SHOULD reply to the sender with an appropriate INFO message.
+Servers MUST accept empty messages(with body full of underscores) as well-formed.
 
 ## Messages from server to client
 
-### MESSAGE
+### SM
 
-The MESSAGE message is sent by servers and MUST be of form:
+The SM message is sent by servers and MUST be of form:
 
-* string `MESSAGE` in upper case;
-* followed by exactly one normal space character;
-* followed by the sender username represented by a string of upper or lower case letters, numbers or underscores;
-* followed by exactly one normal space character;
-* followed by the message body length (LENGTH) in bytes, a nonnegative integer represented as a string of decimal digits without leading zeros;
-* followed by exactly one normal newline character;
-* followed by the message body represented as an exactly LENGTH bytes long sequence of arbitrary symbols;
-* followed by exactly one normal newline character.
+* string `SM` in upper case;
+* followed by the sender username represented by a string of upper or lower case letters and numbers, with length of exactly 30 characters. If the username is not that long, it is followed by underscores to reach that exact length.
+* followed by the message body with the length of exactly 32 characters. If the message is not that long, it is followed by the underscores.
 
-Example, as a C string literal: "MESSAGE user122 17\nhi!\nhow are you?\n\n"
+Example, as a C string literal: "SMusernameofnewuser_____________Hey! How's it going?____________"
 
-### PASSWORDREQUEST
+### IN
 
-The PASSWORDREQUEST message is sent by servers and MUST be of form:
+The IN message is sent by servers and MUST be of form:
 
-* string `PASSWORDREQUEST` in upper case;
-* followed by exactly one normal space character;
-* followed by the username represented by a string of upper or lower case letters, numbers or underscores,
-* followed by exactly one normal newline character (ASCII "LF").
+* string `IN` in upper case;
+* followed by the message body with the length of exactly 62 characters. If the message is not that long, it is followed by the underscores.
 
-Example, as a C string literal: "PASSWORDREQUEST user1234\n"
+Example, as a C string literal: "INuser usernameofnewuser is here!_______________________________"
 
-### INFO
-
-The INFO message is sent by servers and MUST be of form:
-
-* string `INFO` in upper case;
-* followed by exactly one normal space character;
-* followed by the message body length (LENGTH) in bytes, a nonnegative integer represented as a string of decimal digits without leading zeros;
-* followed by exactly one normal newline character;
-* followed by the message body represented as an exactly LENGTH bytes long sequence of arbitrary symbols;
-* followed by exactly one normal newline character.
-
-Example, as a C string literal: "INFO 28\nuser johnny entered the chat\n"
-
-Servers SHOULD send INFO messages to describe connects and disconnects of users, errors with delivery of previous messages, and other service information.
+Servers SHOULD send IN messages to describe connects and disconnects of users, errors with delivery of previous messages, and other service information.
